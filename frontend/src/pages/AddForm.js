@@ -28,9 +28,14 @@ const QuestionsContainer = ({
     showErrors,
     toggleAnswer,
     handleImageUpload,
-    validationErrors
+    validationErrors,
+    updateMatchingItem,
+    deleteMatchingItem,
+    addMatchingOption,
+    autoResizeTextarea
 }) => {
     const [draggedIndex, setDraggedIndex] = useState(null);
+    const [draggedOptionId, setDraggedOptionId] = useState(null);
 
     const onDragStart = (index) => {
         setDraggedIndex(index);
@@ -58,6 +63,176 @@ const QuestionsContainer = ({
         setQuestions(updatedQuestions);
         setDraggedIndex(null); // 重置拖曳索引
         onDragEnd(); // 拖曳結束時移除 dragging 類
+    };
+
+    const handleMatchingDragStart = (e, optionId) => {
+        setDraggedOptionId(optionId);
+        e.target.classList.add('dragging');
+    };
+
+    const handleMatchingDragEnd = (e) => {
+        e.target.classList.remove('dragging');
+        setDraggedOptionId(null);
+    };
+
+    const handleMatchingDragOver = (e) => {
+        e.preventDefault();
+        e.currentTarget.classList.add('active');
+    };
+
+    const handleMatchingDragLeave = (e) => {
+        e.currentTarget.classList.remove('active');
+    };
+
+    const handleMatchingDrop = (e, qIndex, questionIndex) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove('active');
+        
+        if (draggedOptionId === null) return;
+
+        const updatedQuestions = [...questions];
+        const question = updatedQuestions[qIndex];
+        const matchingQuestion = question.matchingQuestions[questionIndex];
+        
+        // 切換選項的匹配狀態
+        const optionIndex = matchingQuestion.matchedOptionIds.indexOf(draggedOptionId);
+        if (optionIndex === -1) {
+            matchingQuestion.matchedOptionIds.push(draggedOptionId);
+        } else {
+            matchingQuestion.matchedOptionIds.splice(optionIndex, 1);
+        }
+        
+        setQuestions(updatedQuestions);
+    };
+
+    const renderMatchingQuestion = (q, qIndex) => {
+        if (q.questionType !== 'matching') return null;
+
+        return (
+            <div className="matching-container">
+                <div className="matching-options-column">
+                    <div className="matching-column-title">選項</div>
+                    {q.matchingOptions?.map((opt, optIndex) => (
+                        <div
+                            key={opt.id}
+                            className="matching-option"
+                            draggable
+                            onDragStart={(e) => handleMatchingDragStart(e, opt.id)}
+                            onDragEnd={handleMatchingDragEnd}
+                        >
+                            <span className="matching-option-id">{String.fromCharCode(65 + optIndex)}</span>
+                            <textarea
+                                value={opt.text}
+                                onChange={(e) => updateMatchingItem(qIndex, optIndex, e.target.value, 'option')}
+                                placeholder="輸入選項..."
+                                onInput={autoResizeTextarea}
+                                className={`${validationErrors[qIndex]?.matchingOptions?.[optIndex] ? 'error' : ''}`}
+                            />
+                            {validationErrors[qIndex]?.matchingOptions?.[optIndex] && (
+                                <div className="error-message">
+                                    {validationErrors[qIndex].matchingOptions[optIndex]}
+                                </div>
+                            )}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteMatchingItem(qIndex, optIndex, 'option');
+                                }}
+                                className="delete-btn"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    ))}
+                    {validationErrors[qIndex]?.matchingOptionsLength && (
+                        <div className="error-message">
+                            {validationErrors[qIndex].matchingOptionsLength}
+                        </div>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            addMatchingOption(qIndex, 'option');
+                        }}
+                        className="matching-add-btn"
+                    >
+                        + 新增選項
+                    </button>
+                </div>
+                <div className="matching-questions-column">
+                    <div className="matching-column-title">題目</div>
+                    {q.matchingQuestions?.map((question, questionIndex) => (
+                        <div key={question.id} className="matching-question">
+                            <span className="matching-option-id">{questionIndex + 1}</span>
+                            <textarea
+                                value={question.text}
+                                onChange={(e) => updateMatchingItem(qIndex, questionIndex, e.target.value, 'question')}
+                                placeholder="輸入題目..."
+                                onInput={autoResizeTextarea}
+                                className={`${validationErrors[qIndex]?.matchingQuestions?.[questionIndex] ? 'error' : ''}`}
+                            />
+                            {validationErrors[qIndex]?.matchingQuestions?.[questionIndex] && (
+                                <div className="error-message">
+                                    {validationErrors[qIndex].matchingQuestions[questionIndex]}
+                                </div>
+                            )}
+                            <div 
+                                className="matching-answers-container"
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.add('active');
+                                }}
+                                onDragLeave={(e) => {
+                                    e.currentTarget.classList.remove('active');
+                                }}
+                                onDrop={(e) => handleMatchingDrop(e, qIndex, questionIndex)}
+                                onClick={() => {
+                                    if (question.matchedOptionIds.length > 0) {
+                                        const updatedQuestions = [...questions];
+                                        updatedQuestions[qIndex].matchingQuestions[questionIndex].matchedOptionIds = [];
+                                        setQuestions(updatedQuestions);
+                                    }
+                                }}
+                                style={{ cursor: question.matchedOptionIds.length > 0 ? 'pointer' : 'default' }}
+                            >
+                                <div className="matching-answer-bracket">
+                                    {question.matchedOptionIds.length > 0 ? (
+                                        `（${q.matchingOptions
+                                            .filter(opt => question.matchedOptionIds.includes(opt.id))
+                                            .map((option, index) => String.fromCharCode(65 + q.matchingOptions.indexOf(option)))
+                                            .sort()
+                                            .join('、')}）`
+                                    ) : '（）'}
+                                </div>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteMatchingItem(qIndex, questionIndex, 'question');
+                                }}
+                                className="delete-btn"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    ))}
+                    {validationErrors[qIndex]?.matchingQuestionsLength && (
+                        <div className="error-message">
+                            {validationErrors[qIndex].matchingQuestionsLength}
+                        </div>
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            addMatchingOption(qIndex, 'question');
+                        }}
+                        className="matching-add-btn"
+                    >
+                        + 新增題目
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     /** 根據題型返回對應的選項樣式類型 */
@@ -105,13 +280,29 @@ const QuestionsContainer = ({
                         &#x2022;&#x2022;&#x2022;
                     </div>
                     <div className="question-header">
-                        <input
-                            type="text"
-                            className={`question-input ${validationErrors[qIndex]?.questionText ? 'error' : ''}`}
-                            placeholder="輸入題目..."
-                            value={q.questionText}
-                            onChange={(e) => updateQuestion(qIndex, "questionText", e.target.value)}
-                        />
+                        {q.questionType === 'matching' ? (
+                            <textarea
+                                className={`question-input ${validationErrors[qIndex]?.questionText ? 'error' : ''}`}
+                                placeholder="題目敘述"
+                                value={q.questionText}
+                                onChange={(e) => {
+                                    updateQuestion(qIndex, "questionText", e.target.value);
+                                    autoResizeTextarea(e);
+                                }}
+                                onInput={autoResizeTextarea}
+                            />
+                        ) : (
+                            <textarea
+                                className={`question-input ${validationErrors[qIndex]?.questionText ? 'error' : ''}`}
+                                placeholder="輸入題目"
+                                value={q.questionText}
+                                onChange={(e) => {
+                                    updateQuestion(qIndex, "questionText", e.target.value);
+                                    autoResizeTextarea(e);
+                                }}
+                                onInput={autoResizeTextarea}
+                            />
+                        )}
                         {validationErrors[qIndex]?.questionText && (
                             <div className="error-message">{validationErrors[qIndex].questionText}</div>
                         )}
@@ -124,6 +315,7 @@ const QuestionsContainer = ({
                                 <option value="radio">單選題</option>
                                 <option value="checkbox">複選題</option>
                                 <option value="boolean">是非題</option>
+                                <option value="matching">配合題</option>
                                 <option value="image">圖片題</option>
                                 <option value="text">簡答題</option>
                             </select>
@@ -131,10 +323,11 @@ const QuestionsContainer = ({
                     </div>
 
                     <div className="options-container">
-                        {q.questionType === 'text' ? (
+                        {q.questionType === 'matching' ? (
+                            renderMatchingQuestion(q, qIndex)
+                        ) : q.questionType === 'text' ? (
                             <div className="option">
-                                <input
-                                    type="text"
+                                <textarea
                                     placeholder="簡答題文字輸入區域..."
                                     className="essay-input"
                                     disabled // 簡答題不需要實際存儲選項
@@ -165,30 +358,32 @@ const QuestionsContainer = ({
                                 <div key={optIndex} className={`image-option ${opt.isAnswer ? 'selected-answer' : ''}`}>
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept=".jpg,.jpeg,.png"
                                         onChange={(e) => handleImageUpload(e, qIndex, optIndex)}
                                         className="image-upload-input"
                                     />
                                     {opt.text && <img src={opt.text} alt="選項圖片" className="option-image-preview" />}
-                                    {formType === "quiz" && (
-                                        <label className="answer-checkbox">
-                                            <input
-                                                type="checkbox"
-                                                checked={opt.isAnswer || false}
-                                                onChange={() => toggleAnswer(qIndex, optIndex)}
-                                            />
-                                            <span className="checkmark"></span>
-                                        </label>
-                                    )}
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            deleteOption(qIndex, optIndex);
-                                        }}
-                                        className="delete-btn"
-                                    >
-                                        <i className="bi bi-x-lg"></i>
-                                    </button>
+                                    <div className="controls-container">
+                                        {formType === "quiz" && (
+                                            <label className="answer-checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={opt.isAnswer || false}
+                                                    onChange={() => toggleAnswer(qIndex, optIndex)}
+                                                />
+                                                <span className="checkmark"></span>
+                                            </label>
+                                        )}
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                deleteOption(qIndex, optIndex);
+                                            }}
+                                            className="delete-btn"
+                                        >
+                                            <i className="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         ) : (
@@ -198,11 +393,14 @@ const QuestionsContainer = ({
                                         <div className={`option-style ${getOptionStyle(q.questionType)}`}>
                                             {q.questionType === 'checkbox' ? '▢' : '○'}
                                         </div>
-                                        <input
-                                            type="text"
+                                        <textarea
                                             value={opt.text}
                                             className={`${validationErrors[qIndex]?.options?.[optIndex] ? 'error' : ''}`}
-                                            onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
+                                            onChange={(e) => {
+                                                updateOption(qIndex, optIndex, e.target.value);
+                                                autoResizeTextarea(e);
+                                            }}
+                                            onInput={autoResizeTextarea}
                                             placeholder="輸入選項"
                                         />
                                         {validationErrors[qIndex]?.options?.[optIndex] && (
@@ -241,7 +439,7 @@ const QuestionsContainer = ({
                                 )}
                             </>
                         )}
-                        {(q.questionType !== 'text' && q.questionType !== 'boolean' && selectedQuestionIndex === qIndex) && (
+                        {(q.questionType !== 'text' && q.questionType !== 'boolean' && q.questionType !== 'matching' && selectedQuestionIndex === qIndex) && (
                             <button
                                 onClick={(e) => {
                                     e.preventDefault();
@@ -339,6 +537,22 @@ const AddForm = () => {
     const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(-1);
     const navigate = useNavigate();
 
+    // 自動調整文本框高度的函數
+    const autoResizeTextarea = (e) => {
+        const element = e.target;
+        element.style.height = '38px';
+        element.style.height = `${element.scrollHeight}px`;
+    };
+
+    // 在組件加載和更新時調整所有文字輸入框的高度
+    useEffect(() => {
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            textarea.style.height = '38px';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        });
+    }, [questions]);
+
     // 計算總分
     const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0);
 
@@ -401,48 +615,97 @@ const AddForm = () => {
 
     /** 新增問題 - 初始化問題數據結構 */
     const addQuestion = () => {
-        setQuestions([
-            ...questions,
-            {
-                id: Date.now(),
-                questionText: "",
-                options: getInitialOptions("radio"),
-                category: "none",
-                questionType: "radio",
-                answer: "",
-                score: 0
-            }
-        ]);
+        const newQuestion = {
+            id: Date.now(),
+            questionText: "",
+            category: "none",
+            questionType: "radio",
+            score: formType === "quiz" ? 0 : undefined
+        };
+
+        // 根據題型初始化相應的屬性
+        if (newQuestion.questionType === 'matching') {
+            newQuestion.matchingOptions = [{ id: Date.now().toString(), text: "" }];
+            newQuestion.matchingQuestions = [{ id: Date.now().toString(), text: "", matchedOptionIds: [] }];
+            newQuestion.options = [];
+        } else {
+            newQuestion.options = getInitialOptions(newQuestion.questionType, formType);
+        }
+
+        setQuestions([...questions, newQuestion]);
     };
 
     const updateQuestion = (index, field, value) => {
         const updatedQuestions = [...questions];
 
+        // 處理題型變更
         if (field === 'questionType') {
-            updatedQuestions[index].options = getInitialOptions(value);
+            const currentQuestion = { ...updatedQuestions[index] };
+            
+            if (value === 'matching') {
+                // 配合題的特殊初始化
+                updatedQuestions[index] = {
+                    ...currentQuestion,
+                    questionType: value,
+                    matchingOptions: currentQuestion.matchingOptions || [{ id: Date.now().toString(), text: "" }],
+                    matchingQuestions: currentQuestion.matchingQuestions || [{ id: Date.now().toString(), text: "", matchedOptionIds: [] }],
+                    options: [] // 清空原有的選項
+                };
+            } else {
+                // 從配合題切換到其他題型
+                const { matchingOptions, matchingQuestions, ...rest } = currentQuestion;
+                updatedQuestions[index] = {
+                    ...rest,
+                    questionType: value,
+                    options: getInitialOptions(value, formType)
+                };
+            }
+        } else {
+            updatedQuestions[index][field] = value;
         }
-
-        updatedQuestions[index][field] = value;
+        
         setQuestions(updatedQuestions);
     };
 
-    const updateOption = (qIndex, optIndex, value) => {
+    const updateOption = (qIndex, optIndex, value, field = 'text') => {
         const updatedQuestions = [...questions];
-        // 如果选项是字符串，转换为对象格式
-        if (typeof updatedQuestions[qIndex].options[optIndex] === 'string') {
-            updatedQuestions[qIndex].options[optIndex] = {
-                text: updatedQuestions[qIndex].options[optIndex],
-                isAnswer: false
-            };
+        const question = updatedQuestions[qIndex];
+        
+        if (question.questionType === 'matching') {
+            // 處理配合題選項
+            if (!question.options[optIndex]) {
+                question.options[optIndex] = { text: "", answer: "", isMatched: false };
+            }
+            question.options[optIndex][field] = value;
+        } else {
+            // 處理其他題型選項
+            if (typeof question.options[optIndex] === 'string') {
+                question.options[optIndex] = {
+                    text: question.options[optIndex],
+                    isAnswer: formType === "quiz" ? false : undefined
+                };
+            }
+            question.options[optIndex].text = value;
         }
-        // 更新text属性而不是直接替换整个对象
-        updatedQuestions[qIndex].options[optIndex].text = value;
+        
         setQuestions(updatedQuestions);
     };
 
     const addOption = (qIndex) => {
         const updatedQuestions = [...questions];
-        updatedQuestions[qIndex].options.push({ text: "", isAnswer: false });
+        const question = updatedQuestions[qIndex];
+        
+        if (question.questionType === 'matching') {
+            question.options.push({
+                id: Date.now().toString(),
+                text: "",
+                answer: "",
+                matchedOptionId: null
+            });
+        } else {
+            question.options.push({ text: "", isAnswer: formType === "quiz" ? false : undefined });
+        }
+        
         setQuestions(updatedQuestions);
     };
 
@@ -481,10 +744,41 @@ const AddForm = () => {
         questions.forEach((q, qIndex) => {
             const questionErrors = {};
 
-            // 驗證題目文字
-            if (!q.questionText.trim()) {
+            // 驗證題目文字（非配合題）
+            if (q.questionType !== 'matching' && !q.questionText.trim()) {
                 questionErrors.questionText = "請輸入題目內容";
                 if (firstErrorIndex === -1) firstErrorIndex = qIndex;
+            }
+
+            // 驗證配合題的選項和題目
+            if (q.questionType === 'matching') {
+                // 驗證選項
+                q.matchingOptions.forEach((opt, optIndex) => {
+                    if (!opt.text.trim()) {
+                        questionErrors.matchingOptions = questionErrors.matchingOptions || [];
+                        questionErrors.matchingOptions[optIndex] = "請輸入選項內容";
+                        if (firstErrorIndex === -1) firstErrorIndex = qIndex;
+                    }
+                });
+
+                // 驗證題目
+                q.matchingQuestions.forEach((question, questionIndex) => {
+                    if (!question.text.trim()) {
+                        questionErrors.matchingQuestions = questionErrors.matchingQuestions || [];
+                        questionErrors.matchingQuestions[questionIndex] = "請輸入題目內容";
+                        if (firstErrorIndex === -1) firstErrorIndex = qIndex;
+                    }
+                });
+
+                // 驗證是否至少有一個選項和一個題目
+                if (q.matchingOptions.length === 0) {
+                    questionErrors.matchingOptionsLength = "請至少新增一個選項";
+                    if (firstErrorIndex === -1) firstErrorIndex = qIndex;
+                }
+                if (q.matchingQuestions.length === 0) {
+                    questionErrors.matchingQuestionsLength = "請至少新增一個題目";
+                    if (firstErrorIndex === -1) firstErrorIndex = qIndex;
+                }
             }
 
             // 驗證選項 (非簡答題/圖片題)
@@ -560,17 +854,35 @@ const AddForm = () => {
         if (JSON.stringify(questions) !== JSON.stringify(migratedQuestions)) {
             setQuestions(migratedQuestions);
         }
-    }, []); // 空依赖数组表示只在组件加载时运行一次
+    }, [questions]); // 添加 questions 作為依賴項
 
-    // 修正初始化選項的函數，改為接收questionType
-    const getInitialOptions = (questionType) => {
-        if (questionType === 'boolean') {
-            return [
-                { text: "是", isAnswer: false },
-                { text: "否", isAnswer: false }
-            ];
+    // 修改 getInitialOptions 函數，根據表單類型初始化選項
+    const getInitialOptions = (questionType, currentFormType) => {
+        switch (questionType) {
+            case 'boolean':
+                return [
+                    { text: "是", isAnswer: currentFormType === "quiz" ? false : undefined },
+                    { text: "否", isAnswer: currentFormType === "quiz" ? false : undefined }
+                ];
+            case 'matching':
+                return [
+                    { 
+                        id: Date.now().toString(),
+                        text: "",
+                        answer: "",
+                        matchedOptionId: null
+                    }
+                ];
+            case 'radio':
+            case 'checkbox':
+                return [{ text: "", isAnswer: currentFormType === "quiz" ? false : undefined }];
+            case 'text':
+                return [];
+            case 'image':
+                return [{ text: "", isAnswer: currentFormType === "quiz" ? false : undefined }];
+            default:
+                return [{ text: "", isAnswer: currentFormType === "quiz" ? false : undefined }];
         }
-        return [{ text: "", isAnswer: false }];
     };
 
     // 新增圖片上傳處理函數
@@ -591,6 +903,75 @@ const AddForm = () => {
         }
     };
 
+    // 配合題相關函數
+    const addMatchingOption = (qIndex, type) => {
+        const updatedQuestions = [...questions];
+        const question = updatedQuestions[qIndex];
+        
+        if (type === 'option') {
+            question.matchingOptions.push({
+                id: Date.now().toString(),
+                text: ""
+            });
+        } else {
+            question.matchingQuestions.push({
+                id: Date.now().toString(),
+                text: "",
+                matchedOptionIds: []
+            });
+        }
+        
+        setQuestions(updatedQuestions);
+    };
+
+    const updateMatchingItem = (qIndex, itemIndex, value, type) => {
+        const updatedQuestions = [...questions];
+        const question = updatedQuestions[qIndex];
+        
+        if (type === 'option') {
+            question.matchingOptions[itemIndex].text = value;
+        } else {
+            question.matchingQuestions[itemIndex].text = value;
+        }
+        
+        setQuestions(updatedQuestions);
+    };
+
+    const deleteMatchingItem = (qIndex, itemIndex, type) => {
+        const updatedQuestions = [...questions];
+        const question = updatedQuestions[qIndex];
+        
+        if (type === 'option') {
+            const deletedOptionId = question.matchingOptions[itemIndex].id;
+            question.matchingOptions.splice(itemIndex, 1);
+            // 清除相關的匹配關係
+            question.matchingQuestions.forEach(q => {
+                q.matchedOptionIds = q.matchedOptionIds.filter(id => id !== deletedOptionId);
+            });
+        } else {
+            question.matchingQuestions.splice(itemIndex, 1);
+        }
+        
+        setQuestions(updatedQuestions);
+    };
+
+    // 修改 formType 切換處理
+    useEffect(() => {
+        if (questions.length > 0) {
+            const updatedQuestions = questions.map(question => ({
+                ...question,
+                score: formType === "quiz" ? (question.score || 0) : undefined,
+                options: question.options.map(opt => ({
+                    ...opt,
+                    ...(formType === "quiz" ? {
+                        isAnswer: typeof opt.isAnswer === 'boolean' ? opt.isAnswer : false
+                    } : {})
+                }))
+            }));
+            setQuestions(updatedQuestions);
+        }
+    }, [formType, questions]); // 添加 questions 作為依賴項
+
     return (
         <Layout>
             <Container fluid className="form-container">
@@ -604,12 +985,12 @@ const AddForm = () => {
                                 value={formTitle}
                                 onChange={(e) => setFormTitle(e.target.value)}
                             />
-                            <Form.Control
-                                type="text"
+                            <textarea
                                 className="form-description"
                                 placeholder="簡短說明"
                                 value={formDescription}
                                 onChange={(e) => setFormDescription(e.target.value)}
+                                onInput={autoResizeTextarea}
                             />
                         </Form.Group>
                     </Col>
@@ -684,6 +1065,10 @@ const AddForm = () => {
                     toggleAnswer={toggleAnswer}
                     handleImageUpload={handleImageUpload}
                     validationErrors={validationErrors}
+                    updateMatchingItem={updateMatchingItem}
+                    deleteMatchingItem={deleteMatchingItem}
+                    addMatchingOption={addMatchingOption}
+                    autoResizeTextarea={autoResizeTextarea}
                 />
 
                 {/* 確認對話框使用 Bootstrap Modal */}

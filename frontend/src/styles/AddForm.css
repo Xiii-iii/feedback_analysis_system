@@ -18,7 +18,25 @@
     }
     .form-description {
         font-size: 0.9rem;
-        padding: 0.5rem 0.75rem;
+        padding: 8px 10px;
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        min-height: calc(1.5em + 16px);
+        resize: none;
+        font-family: inherit;
+        background: white;
+        transition: none;
+        overflow: hidden;
+        line-height: 1.5;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    .form-description:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
 }
 
@@ -55,6 +73,7 @@
     width: 100%;
     border: 1px solid #ccc;
     border-radius: 5px;
+    min-height: 60px;
 }
 
 .options-container {
@@ -63,27 +82,103 @@
 
 .option {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.5rem;
     gap: 0.5rem;
     background-color: #ffffff;
     padding: 0.5rem;
     border-radius: 5px;
     transition: all 0.2s ease;
+    background: white;
 }
 
 .option:hover {
     background-color: #ffffff;
 }
 
-.option input[type="text"] {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
-    flex: 1;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    min-width: 0;
-    width: 100%;
+.option.selected-answer {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.option-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.answer-checkbox {
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    margin-left: auto;
+    min-width: 20px;
+    padding: 4px;
+}
+
+.answer-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.answer-checkbox .checkmark {
+    position: relative;
+    height: 24px;
+    width: 24px;
+    background-color: #fff;
+    border: 2px solid #4CAF50;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.answer-checkbox input:checked + .checkmark {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.answer-checkbox input:checked + .checkmark:after {
+    content: '✓';
+    color: white;
+    font-size: 16px;
+    display: block;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    padding: 0.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+    color: #c82333;
+}
+
+/* 是非題特殊樣式 */
+.boolean-options .answer-checkbox .checkmark {
+    border-radius: 50%;
+}
+
+.boolean-options .option.selected-answer {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .category {
@@ -142,24 +237,6 @@
 
 .floating-btn:hover {
     background-color: #0056b3;
-}
-
-.delete-btn {
-    margin-left: auto;
-    background-color: transparent !important;
-    color: #6c757d !important;
-    border: none !important;
-    padding: 0.2rem !important;
-    font-size: 1.1rem;
-    line-height: 1;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.delete-btn:hover {
-    color: #dc3545 !important;
-    transform: scale(1.2);
-    background-color: transparent !important;
 }
 
 .form-type-selector {
@@ -578,74 +655,24 @@ select:focus {
 
 /* 自定义复选框样式 */
 .answer-checkbox {
-    display: flex;
-    align-items: center;
-    position: relative;
-    cursor: pointer;
-    margin-left: 0.5rem;
-    min-width: 20px;
+    margin-left: auto;
+    margin-right: 8px;
 }
 
-.answer-checkbox input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
+/* 調整選項內部元素的排列 */
+.option-style {
+    margin-right: 12px;
 }
 
-.checkmark {
-    position: relative;
-    height: 20px;
-    width: 20px;
-    background-color: #fff;
-    border: 2px solid #4CAF50;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.answer-checkbox input:checked ~ .checkmark {
-    background-color: #4CAF50;
-}
-
-.checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-.answer-checkbox input:checked ~ .checkmark:after {
-    display: block;
-}
-
-/* 添加選中狀態樣式 */
-.option.selected-answer {
-    background: #e8f5e9;  /* 淺綠色背景 */
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,128,0,0.1);
-}
-
-/* 調整複選框樣式 */
-.answer-checkbox input:checked ~ .checkmark {
-    background-color: #4CAF50;  /* 勾選時的綠色 */
-    border-color: #4CAF50;
-}
-
-.answer-checkbox input:checked ~ .checkmark:after {
-    display: block;
-}
-
-/* 當問題被選中時保持相同寬度 */
-.question-block.selected .option input[type="text"] {
+.option input[type="text"] {
     flex: 1;
-    width: 100%;
+    margin-right: 12px;
+}
+
+/* 確保勾選框在最右側 */
+.answer-checkbox {
+    margin-left: auto;
+    margin-right: 8px;
 }
 
 /* 新增樣式 */
@@ -758,19 +785,61 @@ select:focus {
     border-radius: 4px;
 }
 
-/* 统一输入框样式 */
+/* 統一文字輸入框樣式 */
+.question-input,
+.option textarea,
+.matching-option textarea,
+.matching-question textarea {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    height: calc(1.5em + 16px); /* 一行文字高度(1.5em) + 上下padding(16px) */
+    min-height: calc(1.5em + 16px);
+    resize: none;
+    font-family: inherit;
+    background: white;
+    transition: none;
+    overflow: hidden;
+    line-height: 1.5;
+    box-sizing: border-box;
+    display: block;
+}
+
+.question-input {
+    height: calc(1.5em + 16px);
+    min-height: calc(1.5em + 16px);
+    line-height: 1.5;
+    padding: 8px 10px;
+    box-sizing: border-box;
+}
+
 .option input[type="text"] {
-    padding: 0.3rem 0.2rem;
+    padding: 8px 10px;
     font-size: 0.9rem;
     flex: 1;
     border: 1px solid #ccc;
     border-radius: 5px;
     min-width: 0;
     width: 100%;
+    height: calc(1.5em + 16px);
+    min-height: calc(1.5em + 16px);
+    line-height: 1.5;
     background: white;
-    transition: all 0.2s ease;
+    transition: none;
+    box-sizing: border-box;
+    display: block;
 }
 
+.option textarea:focus,
+.matching-option textarea:focus,
+.matching-question textarea:focus,
+.question-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
 /* 新增是非題樣式 */
 .boolean-options {
@@ -787,9 +856,10 @@ select:focus {
 }
 
 .boolean-options .option.selected-answer {
-    background: #e8f5e9; /* 淺綠色背景 */
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 128, 0, 0.1);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 /* 新增圖片題樣式 */
@@ -799,10 +869,14 @@ select:focus {
   padding: 1rem;
   border: 1px solid #eee;
   border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
 .image-upload-input {
   margin-bottom: 0.5rem;
+  flex: 1;
 }
 
 .option-image-preview {
@@ -814,17 +888,39 @@ select:focus {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.image-option .controls-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.image-option .answer-checkbox {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
 .image-option .delete-btn {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: rgba(255,255,255,0.8) !important;
+  background: none;
+  border: none;
+  color: #dc3545;
+  padding: 0.25rem;
+  cursor: pointer;
+  display: none; /* 預設隱藏 */
+  align-items: center;
+  justify-content: center;
+}
+
+/* 只在選中題目時顯示刪除按鈕 */
+.question-block.selected .image-option .delete-btn {
+    display: flex;
 }
 
 /* 調整圖片題選中狀態 */
 .image-option.selected-answer {
-  border-color: #4CAF50;
-  box-shadow: 0 2px 8px rgba(76,175,80,0.2);
+  border: 1px solid #eee;
+  box-shadow: none;
 }
 
 .drag-handle {
@@ -851,4 +947,168 @@ select:focus {
         padding: 1.25rem 0.75rem 0.75rem;
         margin: 1.25rem 0;
     }
+}
+
+/* 配合題樣式 */
+.matching-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin: 1rem 0;
+}
+
+.matching-options-column,
+.matching-questions-column {
+    width: 100%;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-height: 150px;
+}
+
+.matching-option {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: grab;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.matching-option.dragging {
+    opacity: 0.5;
+    border: 2px dashed #007bff;
+}
+
+.matching-question {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.matching-dropzone {
+    width: 40px;
+    height: 40px;
+    border: 2px dashed #dee2e6;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.matching-dropzone.active {
+    border-color: #28a745;
+    background: #e8f5e9;
+}
+
+.matching-option-id {
+    width: 24px;
+    height: 24px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.matching-add-btn {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 1rem;
+    background: none;
+    border: 2px dashed #dee2e6;
+    border-radius: 4px;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.matching-add-btn:hover {
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.matching-column-title {
+    font-size: 1rem;
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .matching-container {
+        gap: 1rem;
+    }
+}
+
+/* 調整選項容器的對齊方式 */
+.option,
+.matching-option,
+.matching-question {
+    align-items: flex-start;
+}
+
+.matching-answers-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    flex-wrap: nowrap;
+    overflow: visible;
+    height: 38px;
+}
+
+.matching-answer-bracket {
+    font-size: 1rem;
+    color: #495057;
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.matching-answer-bracket:empty::before {
+    content: '（）';
+    color: #adb5bd;
+}
+
+.matching-dropzone {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #dee2e6;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.matching-dropzone.active {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+}
+
+.matching-dropzone:hover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
 }
